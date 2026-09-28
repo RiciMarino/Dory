@@ -36,7 +36,7 @@ function doPost(e) {
           subject: 'Dory · La tua prenotazione è stata cancellata',
           body: 'Ciao ' + data.name + ',\n\nRic e Peppe hanno cancellato la tua prenotazione per ' +
             data.offer + ' (' + Number(data.people) + (Number(data.people) === 1 ? ' persona' : ' persone') + ').\n\n' +
-            'Il relativo invito verrà rimosso dal calendario. Se vuoi chiarire o concordare un’altra uscita, rispondi a questa email.\n\nRic e Peppe',
+            'Il relativo invito verrà rimosso dal calendario. Se vuoi chiarire o concordare un’altra uscita, rispondi pure a questa email. A bordo i Comandanti hanno sempre ragione; da terra puoi anche insultarci con tutta la fantasia che vuoi. Leggeremo tutto, promesso.\n\nRic e Peppe',
           name: 'Ric e Peppe'
         });
         properties.setProperty(guestKey, new Date().toISOString());
