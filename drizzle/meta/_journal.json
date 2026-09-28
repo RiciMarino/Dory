@@ -22,6 +22,13 @@
       "when": 1790544137736,
       "tag": "0002_skinny_wrecking_crew",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1790582759104,
+      "tag": "0003_crazy_callisto",
+      "breakpoints": true
     }
   ]
 }
