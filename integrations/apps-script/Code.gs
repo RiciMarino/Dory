@@ -9,11 +9,40 @@ function doPost(e) {
     if (Session.getEffectiveUser().getEmail().toLowerCase() !== 'ricimarino@gmail.com')
       return reply_({ok:false,error:'wrong-owner'});
     if (!/^[0-9a-f-]{36}$/i.test(String(data.id || '')) ||
-        !/^\S+@\S+\.\S+$/.test(String(data.email || '')) ||
+        (data.type !== 'cancellation' && !/^\S+@\S+\.\S+$/.test(String(data.email || ''))) ||
         !data.name || !data.offer || !(Number(data.people) > 0))
       return reply_({ok:false,error:'invalid-booking'});
 
     var properties = PropertiesService.getScriptProperties();
+    if (data.type === 'cancellation') {
+      var managerKey = 'cancelled-managers:' + data.id;
+      var guestKey = 'cancelled-guest:' + data.id;
+      var detail = String(data.name) + ' · ' + data.offer + ' · ' + Number(data.people) +
+        (Number(data.people) === 1 ? ' persona' : ' persone');
+      if (!properties.getProperty(managerKey)) {
+        MailApp.sendEmail({
+          to: 'ricimarino@gmail.com,giuseppeucci8@gmail.com',
+          subject: 'Dory · Prenotazione cancellata: ' + data.name,
+          body: 'Ric e Peppe,\n\nla prenotazione è stata cancellata dalla Gestione equipaggio.\n\n' +
+            detail + '\nEmail ospite: ' + (data.email || 'non indicata') +
+            '\n\nIl posto è di nuovo disponibile. L’invito individuale e il riepilogo Calendar saranno aggiornati dalla sincronizzazione periodica.',
+          name: 'Ric e Peppe'
+        });
+        properties.setProperty(managerKey, new Date().toISOString());
+      }
+      if (data.email && !properties.getProperty(guestKey)) {
+        MailApp.sendEmail({
+          to: String(data.email).toLowerCase(),
+          subject: 'Dory · La tua prenotazione è stata cancellata',
+          body: 'Ciao ' + data.name + ',\n\nRic e Peppe hanno cancellato la tua prenotazione per ' +
+            data.offer + ' (' + Number(data.people) + (Number(data.people) === 1 ? ' persona' : ' persone') + ').\n\n' +
+            'Il relativo invito verrà rimosso dal calendario. Se vuoi chiarire o concordare un’altra uscita, rispondi a questa email.\n\nRic e Peppe',
+          name: 'Ric e Peppe'
+        });
+        properties.setProperty(guestKey, new Date().toISOString());
+      }
+      return reply_({ok:true});
+    }
     if (data.type === 'new-request') {
       var noticeKey = 'notified:' + data.id;
       if (properties.getProperty(noticeKey)) return reply_({ok:true,alreadySent:true});
