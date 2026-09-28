@@ -1,13 +1,17 @@
 import { db, manager, overview } from "@/lib/data";
 import { offers } from "@/lib/plan";
 import { notifyManagers } from "@/lib/notifications";
-import { waitUntil } from "cloudflare:workers";
+import { env, waitUntil } from "cloudflare:workers";
 export async function GET(request:Request){
   if(!await manager(request)) return Response.json({error:"Accesso riservato"},{status:403});
   try {const result=await db().prepare("SELECT id,slot_id,name,email,people,message,status,added_by,created_at,confirmation_sent_at,confirmation_sent_to,cancellation_sent_at FROM requests ORDER BY created_at DESC").all();return Response.json({requests:result.results})}
   catch{return Response.json({error:"Richieste non disponibili"},{status:503})}
 }
 export async function POST(request:Request){
+  const config = env as unknown as Record<string, string | undefined>;
+  if (!config.DORY_CONFIRMATION_WEBAPP_URL || !config.DORY_CONFIRMATION_TOKEN) {
+    return Response.json({error:"Prenotazioni temporaneamente non disponibili"},{status:503});
+  }
   try{
     const body=await request.json() as Record<string,unknown>;
     const slotId=String(body.slotId??""); const name=String(body.name??"").trim(); const email=String(body.email??"").trim().toLowerCase();const message=String(body.message??"").trim();const people=Number(body.people);
