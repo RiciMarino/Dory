@@ -20,6 +20,8 @@ Stato: preparazione. Il sito pubblico e il suo D1 su Sites restano attivi fino a
 7. Portare la sincronizzazione di Calendar nella componente Google di `ricimarino@gmail.com`, mantenendo i sei eventi settimanali e le descrizioni con nome, periodo e note senza email. Verificare che l'invito dell'ospite abbia la sola durata della sua prenotazione; per date non ancora fissate, attendere la scelta del giorno.
 8. Solo dopo la verifica, condividere il nuovo indirizzo e disattivare le scritture sul vecchio sito. Impostare la pubblicazione automatica da GitHub e verificare un commit di prova. Conservare il vecchio ambiente fino al controllo delle prenotazioni dopo il passaggio.
 
+Il workflow `.github/workflows/cloudflare-preview.yml` è inizialmente **manuale** e usa i segreti GitHub `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` e `DORY_D1_DATABASE_ID`. Non parte finché l'account, D1 e i segreti non sono pronti. Le credenziali applicative del punto 4 vanno anche inserite nei segreti del Worker; i segreti GitHub servono solo al deployment. Dopo i controlli si può abilitare il trigger su `main`.
+
 ## Foglio Google
 
 L'eliminazione fisica di una riga non comunica al trigger quale ID sia stato cancellato. Per renderla affidabile servono una fotografia precedente degli ID e un trigger installabile `onChange`, che confronti gli ID mancanti e chiami un endpoint autenticato di cancellazione; l'endpoint deve poi aggiornare D1, inviti, descrizione e notifiche. È più sicuro iniziare con una colonna **Azione = Cancella** nel Foglio, con ID nascosto/protetto e riscontro dello stato. Il pulsante di cancellazione nel report resta disponibile. Il Foglio non è stato ancora creato né collegato.
