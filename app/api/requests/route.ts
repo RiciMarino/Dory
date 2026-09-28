@@ -4,7 +4,7 @@ import { notifyManagers } from "@/lib/notifications";
 import { waitUntil } from "cloudflare:workers";
 export async function GET(request:Request){
   if(!await manager(request)) return Response.json({error:"Accesso riservato"},{status:403});
-  try {const result=await db().prepare("SELECT id,slot_id,name,email,people,message,status,added_by,created_at,confirmation_sent_at,confirmation_sent_to FROM requests ORDER BY created_at DESC").all();return Response.json({requests:result.results})}
+  try {const result=await db().prepare("SELECT id,slot_id,name,email,people,message,status,added_by,created_at,confirmation_sent_at,confirmation_sent_to,cancellation_sent_at FROM requests ORDER BY created_at DESC").all();return Response.json({requests:result.results})}
   catch{return Response.json({error:"Richieste non disponibili"},{status:503})}
 }
 export async function POST(request:Request){
