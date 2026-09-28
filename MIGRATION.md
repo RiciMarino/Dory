@@ -11,7 +11,7 @@ Stato: preparazione. Il sito pubblico e il suo D1 su Sites restano attivi fino a
 
 ## Preparazione del nuovo ambiente
 
-1. Accedere all'account Cloudflare destinato a Dory e collegare il repository GitHub. Creare un D1 `dory-prenotazioni`, conservando il suo ID fuori dal repository.
+1. Accedere all'account Cloudflare destinato a Dory e creare un D1 `dory-prenotazioni`. Il suo ID pubblico è nel binding del Worker; il token e l’ID dell’account sono nei segreti GitHub.
 2. Eseguire `pnpm build`, poi `node scripts/prepare-cloudflare-config.mjs`. L'ID del D1 creato per Dory è configurato nel codice, come normale binding pubblico; il file generato `dist/server/wrangler.json` resta ignorato da Git.
 3. Inizializzare il nuovo D1 con l'opzione `initialize_database` del workflow manuale, **una sola volta**. Esegue nell'ordine i quattro file `drizzle/0000_*.sql` … `0003_*.sql`. Le righe `--> statement-breakpoint` sono commenti SQL. Verificare tabelle `requests` e `slots` e le colonne di tracciamento email.
 4. Configurare sul Worker i segreti `DORY_RIC_CODE`, `DORY_PEPPE_CODE`, `DORY_SESSION_SECRET`, `DORY_CONFIRMATION_WEBAPP_URL`, `DORY_CONFIRMATION_TOKEN`. Trasferirli tramite gestore segreti, mai tramite commit o log. Mantenere il gateway Apps Script eseguito da `ricimarino@gmail.com`.
