@@ -86,8 +86,8 @@ function doryBookingEvent_(booking, dates) {
       'Il trick: le giornate didattiche. Servono la tessera sportiva AICS (10 €) e il certificato medico non agonistico.\n' +
       DORY_SOURCE_,
     start:{date:dates[0]}, end:{date:dates[1]},
-    attendees:[{email:booking.email.toLowerCase()}],
-    guestsCanModify:false, visibility:'private'
+    attendees:[{email:booking.email.toLowerCase()},{email:'giuseppeucci8@gmail.com'}],
+    guestsCanModify:true, visibility:'private'
   };
 }
 
@@ -142,10 +142,11 @@ function syncDoryCalendar() {
       if (!current) {
         doryCalendarApi_('post', '?sendUpdates=all', desired);
       } else {
-        var currentEmail = (current.attendees || []).map(function(a) { return a.email.toLowerCase(); });
+        var currentEmail = (current.attendees || []).map(function(a) { return a.email.toLowerCase(); }).sort();
+        var desiredEmail = desired.attendees.map(function(a) { return a.email; }).sort();
         if (current.summary !== desired.summary || current.description !== desired.description ||
             current.start.date !== desired.start.date || current.end.date !== desired.end.date ||
-            currentEmail.length !== 1 || currentEmail[0] !== b.email.toLowerCase())
+            current.guestsCanModify !== true || currentEmail.join(',') !== desiredEmail.join(','))
           doryCalendarApi_('patch', '/' + encodeURIComponent(current.id) + '?sendUpdates=all', desired);
       }
       matches.forEach(function(duplicate) {
