@@ -1,6 +1,7 @@
 import { db, manager, managerName, overview } from "@/lib/data";
 import { offers } from "@/lib/plan";
 import { sendConfirmation } from "@/lib/confirmation";
+import { sendCancellation } from "@/lib/cancellation";
 export async function POST(request:Request){
   if(!await manager(request)) return Response.json({error:"Accesso riservato"},{status:403});
   if(request.headers.get("origin")!==new URL(request.url).origin) return Response.json({error:"Origine non valida"},{status:403});
@@ -46,9 +47,15 @@ export async function POST(request:Request){
       await db().prepare("UPDATE requests SET name=?,email=?,people=?,message=?,confirmation_sent_at=CASE WHEN email=? THEN confirmation_sent_at ELSE NULL END,confirmation_sent_to=CASE WHEN email=? THEN confirmation_sent_to ELSE NULL END WHERE id=?").bind(name,email,people,message,email,email,id).run();return Response.json({ok:true});
     }
     if(body.action==="cancel"){
-      const id=String(body.id??"");const row=await db().prepare("SELECT id FROM requests WHERE id=?").bind(id).first();
+      const id=String(body.id??"");const row=await db().prepare("SELECT id,status FROM requests WHERE id=?").bind(id).first<{id:string;status:string}>();
       if(!row)return Response.json({error:"Prenotazione non trovata"},{status:404});
-      await db().prepare("UPDATE requests SET status='cancelled' WHERE id=?").bind(id).run();return Response.json({ok:true});
+      if(row.status!=="cancelled")await db().prepare("UPDATE requests SET status='cancelled' WHERE id=?").bind(id).run();
+      const cancellation=await sendCancellation(id);
+      return Response.json({ok:true,cancellation});
+    }
+    if(body.action==="send-cancellation"){
+      const cancellation=await sendCancellation(String(body.id??""));
+      return Response.json({ok:true,cancellation});
     }
     if(body.action==="send-confirmation"){
       const result=await sendConfirmation(String(body.id??""));
