@@ -2,10 +2,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 // Run after `pnpm build`. The generated file is ignored by Git.
 const path = "dist/server/wrangler.json";
-const databaseId = process.env.DORY_D1_DATABASE_ID;
-if (!databaseId || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(databaseId)) {
-  throw new Error("Set DORY_D1_DATABASE_ID to the UUID of Dory's own Cloudflare D1 database.");
-}
+// Cloudflare D1 binding identifiers are public configuration, not credentials.
+const databaseId = "1a5ee00a-aaff-4553-8d78-2a8b24eb4e8a";
 
 const config = JSON.parse(readFileSync(path, "utf8"));
 config.name = "dory-prenotazioni";
