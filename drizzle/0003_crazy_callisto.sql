@@ -1,0 +1,1 @@
+ALTER TABLE `requests` ADD `cancellation_sent_at` text;
