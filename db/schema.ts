@@ -16,4 +16,5 @@ export const requests = sqliteTable("requests", {
   createdAt: text("created_at").notNull(),
   confirmationSentAt: text("confirmation_sent_at"),
   confirmationSentTo: text("confirmation_sent_to"),
+  cancellationSentAt: text("cancellation_sent_at"),
 });
