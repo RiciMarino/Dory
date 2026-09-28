@@ -11,6 +11,7 @@ export const requests = sqliteTable("requests", {
   email: text("email").notNull(),
   people: integer("people").notNull(),
   message: text("message").notNull().default(""),
+  sailDate: text("sail_date"),
   status: text("status").notNull().default("pending"),
   addedBy: text("added_by").notNull().default("guest"),
   createdAt: text("created_at").notNull(),

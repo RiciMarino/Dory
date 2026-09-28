@@ -29,6 +29,13 @@
       "when": 1790582759104,
       "tag": "0003_crazy_callisto",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790631622638,
+      "tag": "0004_lethal_lethal_legion",
+      "breakpoints": true
     }
   ]
 }

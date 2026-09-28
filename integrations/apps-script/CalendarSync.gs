@@ -61,17 +61,31 @@ function doryDescription_(original, block) {
   return original.slice(0, start) + block + original.slice(end + DORY_END_.length);
 }
 
-function doryBookingEvent_(booking) {
+function doryBookingDates_(booking) {
   var offer = DORY_OFFERS_[booking.slot_id];
-  var detail = offer[4] ? 'Date indicative; orari e logistica saranno confermati da Ric e Peppe.' :
-    'Giorno e durata sono ancora da concordare: questa settimana è soltanto indicativa.';
+  if (!offer) return null;
+  if ((booking.slot_id === 'feb-day' || booking.slot_id === 'sep-day') && booking.sail_date) {
+    var day = String(booking.sail_date);
+    var latest = booking.slot_id === 'sep-day' ? '2027-09-23' : '2027-02-21';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day < offer[2] || day > latest) return null;
+    var tomorrow = new Date(day + 'T00:00:00Z');
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    return [day, tomorrow.toISOString().slice(0, 10)];
+  }
+  return offer[4] ? [offer[2], offer[3]] : null;
+}
+
+function doryBookingEvent_(booking, dates) {
+  var offer = DORY_OFFERS_[booking.slot_id];
+  var detail = 'Orari e logistica saranno confermati da Ric e Peppe.';
   return {
     summary:'Dory · ' + offer[0] + ' · ' + booking.name,
     description:DORY_MARKER_ + booking.id + '\n' +
-      offer[0] + ' · ' + offer[1] + '\n' + detail + '\n\n' +
+      offer[0] + ' · ' + (booking.sail_date || offer[1]) +
+      '\n' + detail + '\n\n' +
       'Il trick: le giornate didattiche. Servono la tessera sportiva AICS (10 €) e il certificato medico non agonistico.\n' +
       DORY_SOURCE_,
-    start:{date:offer[2]}, end:{date:offer[3]},
+    start:{date:dates[0]}, end:{date:dates[1]},
     attendees:[{email:booking.email.toLowerCase()}],
     guestsCanModify:false, visibility:'private'
   };
@@ -118,10 +132,11 @@ function syncDoryCalendar() {
     });
     var active = {};
     bookings.forEach(function(b) {
-      // Flexible weeks have no agreed day yet; do not invite a guest for the whole week.
-      if (!DORY_OFFERS_[b.slot_id] || !DORY_OFFERS_[b.slot_id][4] || !b.email) return;
+      // An undated flexible week stays in the weekly description, without a guest invitation.
+      var dates = doryBookingDates_(b);
+      if (!dates || !b.email) return;
       active[b.id] = true;
-      var desired = doryBookingEvent_(b);
+      var desired = doryBookingEvent_(b, dates);
       var matches = byMarker[b.id] || [];
       var current = matches.shift();
       if (!current) {

@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   }
   try {
     const result = await db().prepare(
-      "SELECT id, slot_id, name, email, people, added_by FROM requests WHERE status='confirmed' ORDER BY created_at, id"
+      "SELECT id, slot_id, name, email, people, added_by, sail_date FROM requests WHERE status='confirmed' ORDER BY created_at, id"
     ).all();
     return Response.json({ bookings: result.results }, { headers: { "Cache-Control": "no-store" } });
   } catch {
