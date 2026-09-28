@@ -8,11 +8,10 @@ export async function GET(request:Request){
   catch{return Response.json({error:"Richieste non disponibili"},{status:503})}
 }
 export async function POST(request:Request){
-  const config = env as unknown as Record<string, string | undefined>;
-  if (!config.DORY_CONFIRMATION_WEBAPP_URL || !config.DORY_CONFIRMATION_TOKEN) {
-    return Response.json({error:"Prenotazioni temporaneamente non disponibili"},{status:503});
-  }
   try{
+    const config=env as unknown as Record<string,string|undefined>;
+    if(!config.DORY_CONFIRMATION_WEBAPP_URL||!config.DORY_CONFIRMATION_TOKEN||config.DORY_CONFIRMATION_TOKEN.length<32)
+      return Response.json({error:"Le richieste saranno disponibili a breve. Riprova più tardi."},{status:503});
     const body=await request.json() as Record<string,unknown>;
     const slotId=String(body.slotId??""); const name=String(body.name??"").trim(); const email=String(body.email??"").trim().toLowerCase();const message=String(body.message??"").trim();const people=Number(body.people);
     const requestId=typeof body.requestId==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.requestId)?body.requestId:crypto.randomUUID();
