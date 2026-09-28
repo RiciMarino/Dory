@@ -15,6 +15,13 @@
       "when": 1790514314161,
       "tag": "0001_slim_norrin_radd",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790544137736,
+      "tag": "0002_skinny_wrecking_crew",
+      "breakpoints": true
     }
   ]
 }

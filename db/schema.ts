@@ -14,4 +14,6 @@ export const requests = sqliteTable("requests", {
   status: text("status").notNull().default("pending"),
   addedBy: text("added_by").notNull().default("guest"),
   createdAt: text("created_at").notNull(),
+  confirmationSentAt: text("confirmation_sent_at"),
+  confirmationSentTo: text("confirmation_sent_to"),
 });
