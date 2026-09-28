@@ -1,10 +1,7 @@
 name: Dory Cloudflare preview
 
-# One scoped push deploy for the February/September preview migration.
+# Deliberately manual until the new D1, secrets and Calendar sync are verified.
 on:
-  push:
-    branches:
-      - feature/giornate-febbraio-settembre
   workflow_dispatch:
     inputs:
       initialize_database:
@@ -43,7 +40,7 @@ jobs:
             pnpm exec wrangler d1 execute DB --remote --config dist/server/wrangler.json --file "$file"
           done
       - name: Add daily booking dates
-        if: inputs.migrate_daily_dates || github.ref == 'refs/heads/feature/giornate-febbraio-settembre'
+        if: inputs.migrate_daily_dates
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
