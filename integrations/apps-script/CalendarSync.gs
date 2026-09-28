@@ -2,7 +2,7 @@
 var DORY_SOURCE_ = 'https://dory-prenotazioni.ricimarino.workers.dev';
 var DORY_CALENDAR_ = 'primary';
 var DORY_MARKER_ = 'DORY-BOOKING-ID:';
-var DORY_START_ = '— Equipaggio Dory';
+var DORY_START_ = '— Equipaggio Dory —';
 var DORY_END_ = '— Fine equipaggio Dory —';
 var DORY_WEEKS_ = [
   {id:'6rgre9e2sut1gf56bt1icrgknk', slots:['nov-day','nov-weekend']},
@@ -106,9 +106,13 @@ function syncDoryCalendar() {
         return '• ' + b.name + ' — ' + b.people + (Number(b.people) === 1 ? ' persona' : ' persone') +
           ' · ' + DORY_OFFERS_[b.slot_id][0] + origin;
       });
-      var block = DORY_START_ + '\n' + (lines.length ? lines.join('\n') : 'Nessuna prenotazione confermata.') +
+      var total = bookings.filter(function(b) { return week.slots.indexOf(b.slot_id) >= 0; })
+        .reduce(function(sum, b) { return sum + Number(b.people); }, 0);
+      var block = DORY_START_ + '\nPrenotazioni confermate: ' + lines.length +
+        ' · Persone: ' + total + '\n' + (lines.length ? lines.join('\n') : 'Nessuna prenotazione confermata.') +
         '\n' + DORY_END_;
-      var next = doryDescription_(current.description || '', block);
+      var next = doryDescription_(current.description || '', block)
+        .replace('https://dory-prenotazioni.riccardo-marin203123.chatgpt.site', DORY_SOURCE_);
       if (next !== (current.description || ''))
         doryCalendarApi_('patch', '/' + encodeURIComponent(week.id) + '?sendUpdates=none', {description:next});
     });
