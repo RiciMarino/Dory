@@ -12,15 +12,15 @@ Stato: preparazione. Il sito pubblico e il suo D1 su Sites restano attivi fino a
 ## Preparazione del nuovo ambiente
 
 1. Accedere all'account Cloudflare destinato a Dory e collegare il repository GitHub. Creare un D1 `dory-prenotazioni`, conservando il suo ID fuori dal repository.
-2. Eseguire `pnpm build`, poi `DORY_D1_DATABASE_ID=<ID> node scripts/prepare-cloudflare-config.mjs`. Il file generato `dist/server/wrangler.json` resta ignorato da Git.
-3. Applicare sul nuovo D1, **una sola volta e nell'ordine**, i quattro file `drizzle/0000_*.sql` … `0003_*.sql`. Le righe `--> statement-breakpoint` sono commenti SQL. Verificare tabelle `requests` e `slots` e le colonne di tracciamento email.
+2. Eseguire `pnpm build`, poi `node scripts/prepare-cloudflare-config.mjs`. L'ID del D1 creato per Dory è configurato nel codice, come normale binding pubblico; il file generato `dist/server/wrangler.json` resta ignorato da Git.
+3. Inizializzare il nuovo D1 con l'opzione `initialize_database` del workflow manuale, **una sola volta**. Esegue nell'ordine i quattro file `drizzle/0000_*.sql` … `0003_*.sql`. Le righe `--> statement-breakpoint` sono commenti SQL. Verificare tabelle `requests` e `slots` e le colonne di tracciamento email.
 4. Configurare sul Worker i segreti `DORY_RIC_CODE`, `DORY_PEPPE_CODE`, `DORY_SESSION_SECRET`, `DORY_CONFIRMATION_WEBAPP_URL`, `DORY_CONFIRMATION_TOKEN`. Trasferirli tramite gestore segreti, mai tramite commit o log. Mantenere il gateway Apps Script eseguito da `ricimarino@gmail.com`.
 5. Esportare dal D1 attuale `requests` e `slots`, includendo ID, stati e indicatori delle email già inviate. Importare nel nuovo D1; verificare numero di righe e ID, poi bloccare temporaneamente nuovi inserimenti durante il passaggio definitivo. Gli inserimenti sono dichiarati di test, ma non vengono eliminati implicitamente.
 6. Pubblicare su un indirizzo `workers.dev` di prova. Verificare accessi di Ric e Peppe, richiesta ospite, report sotto la singola uscita, correzione e cancellazione, una sola email per azione e rimozione dell'invito individuale. Non inviare prove a indirizzi di terzi.
 7. Portare la sincronizzazione di Calendar nella componente Google di `ricimarino@gmail.com`, mantenendo i sei eventi settimanali e le descrizioni con nome, periodo e note senza email. Verificare che l'invito dell'ospite abbia la sola durata della sua prenotazione; per date non ancora fissate, attendere la scelta del giorno.
 8. Solo dopo la verifica, condividere il nuovo indirizzo e disattivare le scritture sul vecchio sito. Impostare la pubblicazione automatica da GitHub e verificare un commit di prova. Conservare il vecchio ambiente fino al controllo delle prenotazioni dopo il passaggio.
 
-Il workflow `.github/workflows/cloudflare-preview.yml` è inizialmente **manuale** e usa i segreti GitHub `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` e `DORY_D1_DATABASE_ID`. Non parte finché l'account, D1 e i segreti non sono pronti. Le credenziali applicative del punto 4 vanno anche inserite nei segreti del Worker; i segreti GitHub servono solo al deployment. Dopo i controlli si può abilitare il trigger su `main`.
+Il workflow `.github/workflows/cloudflare-preview.yml` è inizialmente **manuale** e usa i segreti GitHub `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`. Non parte finché i segreti non sono pronti. Le credenziali applicative del punto 4 vanno anche inserite nei segreti del Worker; i segreti GitHub servono solo al deployment. Dopo i controlli si può abilitare il trigger su `main`.
 
 ## Foglio Google
 
