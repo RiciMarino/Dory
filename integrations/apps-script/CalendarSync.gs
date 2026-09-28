@@ -78,16 +78,18 @@ function doryBookingDates_(booking) {
 function doryBookingEvent_(booking, dates) {
   var offer = DORY_OFFERS_[booking.slot_id];
   var detail = 'Orari e logistica saranno confermati da Ric e Peppe.';
+  var source = JSON.stringify([booking.slot_id, booking.name, booking.email.toLowerCase(), booking.sail_date || '', Number(booking.people)]);
   return {
     summary:'Dory · ' + offer[0] + ' · ' + booking.name,
     description:DORY_MARKER_ + booking.id + '\n' +
       offer[0] + ' · ' + (booking.sail_date || offer[1]) +
       '\n' + detail + '\n\n' +
       'Il trick: le giornate didattiche. Servono la tessera sportiva AICS (10 €) e il certificato medico non agonistico.\n' +
-      DORY_SOURCE_,
+      DORY_SOURCE_ + '\n\n— Note equipaggio —\n',
     start:{date:dates[0]}, end:{date:dates[1]},
     attendees:[{email:booking.email.toLowerCase()},{email:'giuseppeucci8@gmail.com'}],
-    guestsCanModify:true, visibility:'private'
+    guestsCanModify:true, visibility:'private',
+    extendedProperties:{private:{dorySource:source}}
   };
 }
 
@@ -144,10 +146,18 @@ function syncDoryCalendar() {
       } else {
         var currentEmail = (current.attendees || []).map(function(a) { return a.email.toLowerCase(); }).sort();
         var desiredEmail = desired.attendees.map(function(a) { return a.email; }).sort();
-        if (current.summary !== desired.summary || current.description !== desired.description ||
-            current.start.date !== desired.start.date || current.end.date !== desired.end.date ||
-            current.guestsCanModify !== true || currentEmail.join(',') !== desiredEmail.join(','))
+        var sourceChanged = !current.extendedProperties || !current.extendedProperties.private ||
+          current.extendedProperties.private.dorySource !== desired.extendedProperties.private.dorySource;
+        if (sourceChanged) {
+          // Keep crew notes added after the generated description when booking details change.
+          var separator = '\n\n— Note equipaggio —\n';
+          var existingNotes = (current.description || '').split(separator);
+          if (existingNotes.length > 1) desired.description += existingNotes.slice(1).join(separator);
           doryCalendarApi_('patch', '/' + encodeURIComponent(current.id) + '?sendUpdates=all', desired);
+        } else if (current.guestsCanModify !== true || currentEmail.join(',') !== desiredEmail.join(',')) {
+          doryCalendarApi_('patch', '/' + encodeURIComponent(current.id) + '?sendUpdates=all',
+            {attendees:desired.attendees, guestsCanModify:true});
+        }
       }
       matches.forEach(function(duplicate) {
         doryCalendarApi_('delete', '/' + encodeURIComponent(duplicate.id) + '?sendUpdates=all');
