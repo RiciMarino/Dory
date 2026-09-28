@@ -118,7 +118,8 @@ function syncDoryCalendar() {
     });
     var active = {};
     bookings.forEach(function(b) {
-      if (!DORY_OFFERS_[b.slot_id] || !b.email) return;
+      // Flexible weeks have no agreed day yet; do not invite a guest for the whole week.
+      if (!DORY_OFFERS_[b.slot_id] || !DORY_OFFERS_[b.slot_id][4] || !b.email) return;
       active[b.id] = true;
       var desired = doryBookingEvent_(b);
       var matches = byMarker[b.id] || [];
