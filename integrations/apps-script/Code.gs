@@ -8,8 +8,9 @@ function doPost(e) {
     if (!secret || data.token !== secret) return reply_({ok:false,error:'unauthorized'});
     if (Session.getEffectiveUser().getEmail().toLowerCase() !== 'ricimarino@gmail.com')
       return reply_({ok:false,error:'wrong-owner'});
+    var emailRequired = data.type !== 'cancellation' && data.type !== 'manager-confirmation';
     if (!/^[0-9a-f-]{36}$/i.test(String(data.id || '')) ||
-        (data.type !== 'cancellation' && !/^\S+@\S+\.\S+$/.test(String(data.email || ''))) ||
+        (emailRequired && !/^\S+@\S+\.\S+$/.test(String(data.email || ''))) ||
         !data.name || !data.offer || !(Number(data.people) > 0))
       return reply_({ok:false,error:'invalid-booking'});
 
@@ -41,6 +42,22 @@ function doPost(e) {
         });
         properties.setProperty(guestKey, new Date().toISOString());
       }
+      return reply_({ok:true});
+    }
+    if (data.type === 'manager-confirmation') {
+      var confirmedKey = 'confirmed-managers:' + data.id;
+      if (properties.getProperty(confirmedKey)) return reply_({ok:true,alreadySent:true});
+      var who = data.addedBy === 'peppe' ? 'Peppe' : data.addedBy === 'ric' ? 'Ric' : 'Gestione equipaggio';
+      MailApp.sendEmail({
+        to: 'ricimarino@gmail.com,giuseppeucci8@gmail.com',
+        subject: 'Dory · Equipaggio confermato: ' + data.name,
+        body: 'Ric e Peppe,\n\n' + who + ' ha aggiunto e confermato una prenotazione dalla Gestione equipaggio.\n\n' +
+          'Nome: ' + data.name + '\nUscita e periodo: ' + data.offer + '\nPersone: ' + Number(data.people) +
+          '\nEmail ospite: ' + (data.email || 'non indicata') +
+          '\n\nIl riepilogo e l’evento individuale Calendar saranno aggiornati dalla sincronizzazione periodica.',
+        name: 'Ric e Peppe'
+      });
+      properties.setProperty(confirmedKey, new Date().toISOString());
       return reply_({ok:true});
     }
     if (data.type === 'new-request') {
