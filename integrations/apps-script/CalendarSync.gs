@@ -19,7 +19,7 @@ var DORY_OFFERS_ = {
   'feb-night':['Una notte fuori','15–21 febbraio 2027','2027-02-15','2027-02-22',false],
   'apr-first':['Rotta di primavera · prima tratta','14–16 aprile 2027','2027-04-14','2027-04-17',true],
   'apr-second':['Rotta di primavera · seconda tratta','16–18 aprile 2027','2027-04-16','2027-04-19',true],
-  'jun-first':['Rotta di giugno · prima tratta','8–11 giugno 2027','2027-06-08','2027-06-12',true],
+  'jun-first':['Rotta di giugno · prima tratta','7–10 giugno 2027','2027-06-07','2027-06-11',true],
   'jun-second':['Rotta di giugno · seconda tratta','11–13 giugno 2027','2027-06-11','2027-06-14',true],
   'jul-family':['Con le famiglie verso il Circeo','26 luglio – 1 agosto 2027','2027-07-26','2027-08-02',false],
   'sep-day':['Uscite di fine stagione','20–26 settembre 2027','2027-09-20','2027-09-27',false],
