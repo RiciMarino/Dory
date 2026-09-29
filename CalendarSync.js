@@ -1,107 +1,12 @@
-/** Run installDoryCalendarSync once as ricimarino@gmail.com after Worker secrets are set. */
-var DORY_SOURCE_ = 'https://dory-prenotazioni.ricimarino.workers.dev';
-var DORY_CALENDAR_ = 'primary';
-var DORY_MARKER_ = 'DORY-BOOKING-ID:';
-var DORY_START_ = '— Equipaggio Dory —';
-var DORY_END_ = '— Fine equipaggio Dory —';
-var DORY_PEPPE_EMAIL_ = 'giuseppeucci8@gmail.com';
-var DORY_WEEKS_ = [
-  {id:'6rgre9e2sut1gf56bt1icrgknk', slots:['nov-day','nov-weekend']},
-  {id:'ntc5br507d5f6qdhmqj5i6rt78', slots:['feb-day','feb-night']},
-  {id:'fuvohldcrrs3i14bvivs5a4vig', slots:['apr-first','apr-second']},
-  {id:'g72nhela9b5o2rt8q8reluuk3k', slots:['jun-first','jun-second']},
-  {id:'9tgqe133dqdulojn46nta5fu2k', slots:['jul-family']},
-  {id:'4iuuknj76ajid36tb1ck71k3lg', slots:['sep-day','sep-weekend','sep-party']}
-];
-var DORY_OFFERS_ = {
-  'nov-day':['Prima uscita giornaliera','26 novembre 2026','2026-11-26','2026-11-27',true],
-  'nov-weekend':['Primo weekend di Dory','27–29 novembre 2026','2026-11-27','2026-11-30',true],
-  'feb-day':['Uscita d’inverno','15–21 febbraio 2027','2027-02-15','2027-02-22',false],
-  'feb-night':['Una notte fuori','15–21 febbraio 2027','2027-02-15','2027-02-22',false],
-  'apr-first':['Rotta di primavera · prima tratta','14–16 aprile 2027','2027-04-14','2027-04-17',true],
-  'apr-second':['Rotta di primavera · seconda tratta','16–18 aprile 2027','2027-04-16','2027-04-19',true],
-  'jun-first':['Rotta di giugno · prima tratta','7–10 giugno 2027','2027-06-07','2027-06-11',true],
-  'jun-second':['Rotta di giugno · seconda tratta','11–13 giugno 2027','2027-06-11','2027-06-14',true],
-  'jul-family':['Con le famiglie verso il Circeo','26 luglio – 1 agosto 2027','2027-07-26','2027-08-02',false],
-  'sep-day':['Uscite di fine stagione','20–26 settembre 2027','2027-09-20','2027-09-27',false],
-  'sep-weekend':['Ultimo weekend','24–26 settembre 2027','2027-09-24','2027-09-27',true],
-  'sep-party':['Festa finale in porto','26 settembre 2027','2027-09-26','2027-09-27',true]
-};
-
-function doryCalendarApi_(method, path, body) {
-  CalendarApp.getDefaultCalendar();
-  var result = UrlFetchApp.fetch('https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(DORY_CALENDAR_) + '/events' + path, {
-    method: method, contentType: 'application/json', headers: {Authorization:'Bearer ' + ScriptApp.getOAuthToken()},
-    payload: body ? JSON.stringify(body) : undefined, muteHttpExceptions: true
-  });
-  var code = result.getResponseCode();
-  if (code < 200 || code >= 300) throw new Error('Calendar HTTP ' + code + ': ' + result.getContentText());
-  return result.getContentText() ? JSON.parse(result.getContentText()) : {};
-}
-function doryExistingEvents_() {
-  var items = [], page = '';
-  do {
-    var query = '?timeMin=2026-11-22T00%3A00%3A00%2B01%3A00&timeMax=2027-09-28T00%3A00%3A00%2B02%3A00&singleEvents=true&maxResults=2500' + (page ? '&pageToken=' + encodeURIComponent(page) : '');
-    var result = doryCalendarApi_('get', query); items = items.concat(result.items || []); page = result.nextPageToken || '';
-  } while (page); return items;
-}
-function doryDescription_(original, block) {
-  var start = original.indexOf(DORY_START_), end = original.indexOf(DORY_END_);
-  if (start < 0 || end < start) return original.replace(/\s*$/, '') + '\n\n' + block;
-  return original.slice(0, start) + block + original.slice(end + DORY_END_.length);
-}
-function doryBookingEvent_(booking) {
-  var offer = DORY_OFFERS_[booking.slot_id];
-  var detail = 'Date indicative; orari e logistica saranno confermati da Ric e Peppe.';
-  var event = {
-    summary:'Dory · ' + offer[0] + ' · ' + booking.name,
-    description:DORY_MARKER_ + booking.id + '\n' + offer[0] + ' · ' + offer[1] + '\n' + detail + '\n\n' +
-      'Il trick: le giornate didattiche. Servono la tessera sportiva AICS (10 €) e il certificato medico non agonistico.\n' + DORY_SOURCE_,
-    start:{date:offer[2]}, end:{date:offer[3]}, guestsCanModify:false, visibility:'private'
-  };
-  event.attendees = [{email:DORY_PEPPE_EMAIL_}];
-  if (booking.email && String(booking.email).toLowerCase() !== DORY_PEPPE_EMAIL_) event.attendees.unshift({email:String(booking.email).toLowerCase()});
-  return event;
-}
-function syncDoryCalendar() {
-  var lock = LockService.getScriptLock(); lock.waitLock(20000);
-  try {
-    if (Session.getEffectiveUser().getEmail().toLowerCase() !== 'ricimarino@gmail.com') throw new Error('Esegui con ricimarino@gmail.com');
-    var secret = PropertiesService.getScriptProperties().getProperty('DORY_CONFIRMATION_TOKEN');
-    if (!secret || secret.length < 32) throw new Error('DORY_CONFIRMATION_TOKEN mancante');
-    var response = UrlFetchApp.fetch(DORY_SOURCE_ + '/api/calendar-sync', {headers:{Authorization:'Bearer ' + secret}, muteHttpExceptions:true});
-    if (response.getResponseCode() !== 200) throw new Error('Dory HTTP ' + response.getResponseCode());
-    var bookings = JSON.parse(response.getContentText()).bookings; if (!Array.isArray(bookings)) throw new Error('Risposta Dory non valida');
-    var existing = doryExistingEvents_(), byMarker = {};
-    existing.forEach(function(event) { var match = (event.description || '').match(/DORY-BOOKING-ID:([0-9a-f-]{36})/i); if (match) (byMarker[match[1]] = byMarker[match[1]] || []).push(event); });
-    DORY_WEEKS_.forEach(function(week) {
-      var current = existing.filter(function(event) { return event.id === week.id; })[0]; if (!current) throw new Error('Evento settimanale non trovato: ' + week.id);
-      var weekBookings = bookings.filter(function(b) { return week.slots.indexOf(b.slot_id) >= 0; });
-      var lines = weekBookings.map(function(b) { var origin = b.added_by === 'ric' ? ' · aggiunto da Ric' : b.added_by === 'peppe' ? ' · aggiunto da Peppe' : ''; return '• ' + b.name + ' — ' + b.people + (Number(b.people) === 1 ? ' persona' : ' persone') + ' · ' + DORY_OFFERS_[b.slot_id][0] + origin; });
-      var total = weekBookings.reduce(function(sum, b) { return sum + Number(b.people); }, 0);
-      var block = DORY_START_ + '\nPrenotazioni confermate: ' + lines.length + ' · Persone: ' + total + '\n' + (lines.length ? lines.join('\n') : 'Nessuna prenotazione confermata.') + '\n' + DORY_END_;
-      var next = doryDescription_(current.description || '', block).replace('https://dory-prenotazioni.riccardo-marin203123.chatgpt.site', DORY_SOURCE_);
-      if (next !== (current.description || '')) doryCalendarApi_('patch', '/' + encodeURIComponent(week.id) + '?sendUpdates=none', {description:next});
-    });
-    var active = {};
-    bookings.forEach(function(b) {
-      if (!DORY_OFFERS_[b.slot_id] || !DORY_OFFERS_[b.slot_id][4]) return;
-      active[b.id] = true;
-      var desired = doryBookingEvent_(b), matches = byMarker[b.id] || [], current = matches.shift();
-      if (!current) doryCalendarApi_('post', '?sendUpdates=all', desired);
-      else {
-        var currentEmail = (current.attendees || []).map(function(a) { return a.email.toLowerCase(); }).sort();
-        var desiredEmail = (desired.attendees || []).map(function(a) { return a.email.toLowerCase(); }).sort();
-        if (current.summary !== desired.summary || current.description !== desired.description || current.start.date !== desired.start.date || current.end.date !== desired.end.date || currentEmail.join(',') !== desiredEmail.join(','))
-          doryCalendarApi_('patch', '/' + encodeURIComponent(current.id) + '?sendUpdates=all', desired);
-      }
-      matches.forEach(function(duplicate) { doryCalendarApi_('delete', '/' + encodeURIComponent(duplicate.id) + '?sendUpdates=all'); });
-    });
-    Object.keys(byMarker).forEach(function(id) { if (!active[id]) byMarker[id].forEach(function(event) { doryCalendarApi_('delete', '/' + encodeURIComponent(event.id) + '?sendUpdates=all'); }); });
-  } finally { lock.releaseLock(); }
-}
-function installDoryCalendarSync() {
-  syncDoryCalendar();
-  ScriptApp.getProjectTriggers().filter(function(t) { return t.getHandlerFunction() === 'syncDoryCalendar'; }).forEach(ScriptApp.deleteTrigger);
-  ScriptApp.newTrigger('syncDoryCalendar').timeBased().everyMinutes(15).create();
-}
+/** Dory -> Google Calendar sync. Run installDoryCalendarSync once as ricimarino@gmail.com. */
+var DORY_SOURCE_='https://dory-prenotazioni.ricimarino.workers.dev',DORY_CALENDAR_='primary',DORY_MARKER_='DORY-BOOKING-ID:',DORY_START_='— Equipaggio Dory —',DORY_END_='— Fine equipaggio Dory —',DORY_PEPPE_EMAIL_='giuseppeucci8@gmail.com';
+var DORY_WEEKS_=[{id:'6rgre9e2sut1gf56bt1icrgknk',slots:['nov-day','nov-weekend']},{id:'ntc5br507d5f6qdhmqj5i6rt78',slots:['feb-day','feb-night']},{id:'fuvohldcrrs3i14bvivs5a4vig',slots:['apr-first','apr-second']},{id:'g72nhela9b5o2rt8q8reluuk3k',slots:['jun-first','jun-second']},{id:'9tgqe133dqdulojn46nta5fu2k',slots:['jul-family']},{id:'4iuuknj76ajid36tb1ck71k3lg',slots:['sep-day','sep-weekend','sep-party']}];
+var DORY_OFFERS_={'nov-day':['Prima uscita giornaliera','26 novembre 2026','2026-11-26','2026-11-27',true],'nov-weekend':['Primo weekend di Dory','27–29 novembre 2026','2026-11-27','2026-11-30',true],'feb-day':['Uscita d’inverno','15–21 febbraio 2027','2027-02-15','2027-02-22',true],'feb-night':['Una notte fuori','15–21 febbraio 2027','2027-02-15','2027-02-22',false],'apr-first':['Rotta di primavera · prima tratta','14–16 aprile 2027','2027-04-14','2027-04-17',true],'apr-second':['Rotta di primavera · seconda tratta','16–18 aprile 2027','2027-04-16','2027-04-19',true],'jun-first':['Rotta di giugno · prima tratta','7–10 giugno 2027','2027-06-07','2027-06-11',true],'jun-second':['Rotta di giugno · seconda tratta','11–13 giugno 2027','2027-06-11','2027-06-14',true],'jul-family':['Con le famiglie verso il Circeo','26 luglio – 1 agosto 2027','2027-07-26','2027-08-02',false],'sep-day':['Uscite di fine stagione','20–23 settembre 2027','2027-09-20','2027-09-24',true],'sep-weekend':['Ultimo weekend','24–26 settembre 2027','2027-09-24','2027-09-27',true],'sep-party':['Festa finale in porto','26 settembre 2027','2027-09-26','2027-09-27',true]};
+function doryCalendarApi_(method,path,body){CalendarApp.getDefaultCalendar();var r=UrlFetchApp.fetch('https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(DORY_CALENDAR_)+'/events'+path,{method:method,contentType:'application/json',headers:{Authorization:'Bearer '+ScriptApp.getOAuthToken()},payload:body?JSON.stringify(body):undefined,muteHttpExceptions:true}),c=r.getResponseCode();if(c<200||c>=300)throw new Error('Calendar HTTP '+c+': '+r.getContentText());return r.getContentText()?JSON.parse(r.getContentText()):{}}
+function doryExistingEvents_(){var items=[],page='';do{var q='?timeMin=2026-11-22T00%3A00%3A00%2B01%3A00&timeMax=2027-09-28T00%3A00%3A00%2B02%3A00&singleEvents=true&maxResults=2500'+(page?'&pageToken='+encodeURIComponent(page):''),r=doryCalendarApi_('get',q);items=items.concat(r.items||[]);page=r.nextPageToken||''}while(page);return items}
+function doryDescription_(original,block){var s=original.indexOf(DORY_START_),e=original.indexOf(DORY_END_);return s<0||e<s?original.replace(/\s*$/,'')+'\n\n'+block:original.slice(0,s)+block+original.slice(e+DORY_END_.length)}
+function doryChosenDate_(b){var m=String(b.message||'').match(/^\[DORY-DATE:(\d{4}-\d{2}-\d{2})\]/);return m?m[1]:''}
+function doryNextDay_(d){var p=d.split('-'),x=new Date(Date.UTC(Number(p[0]),Number(p[1])-1,Number(p[2])+1));return Utilities.formatDate(x,'UTC','yyyy-MM-dd')}
+function doryBookingEvent_(b){var o=DORY_OFFERS_[b.slot_id],chosen=doryChosenDate_(b),start=chosen||o[2],end=chosen?doryNextDay_(chosen):o[3],label=chosen?'Giornata scelta: '+chosen.split('-').reverse().join('/') : o[1],event={summary:'Dory · '+o[0]+' · '+b.name,description:DORY_MARKER_+b.id+'\n'+o[0]+' · '+label+'\nDate e orari restano subordinati a meteo e conferma di Ric e Peppe.\n\nIl trick: le giornate didattiche. Servono tessera sportiva AICS (10 €) e certificato medico non agonistico.\n'+DORY_SOURCE_,start:{date:start},end:{date:end},guestsCanModify:false,visibility:'private'};event.attendees=[{email:DORY_PEPPE_EMAIL_}];if(b.email&&String(b.email).toLowerCase()!==DORY_PEPPE_EMAIL_)event.attendees.unshift({email:String(b.email).toLowerCase()});return event}
+function syncDoryCalendar(){var lock=LockService.getScriptLock();lock.waitLock(20000);try{if(Session.getEffectiveUser().getEmail().toLowerCase()!=='ricimarino@gmail.com')throw new Error('Esegui con ricimarino@gmail.com');var secret=PropertiesService.getScriptProperties().getProperty('DORY_CONFIRMATION_TOKEN');if(!secret||secret.length<32)throw new Error('DORY_CONFIRMATION_TOKEN mancante');var response=UrlFetchApp.fetch(DORY_SOURCE_+'/api/calendar-sync',{headers:{Authorization:'Bearer '+secret},muteHttpExceptions:true});if(response.getResponseCode()!==200)throw new Error('Dory HTTP '+response.getResponseCode());var bookings=JSON.parse(response.getContentText()).bookings;if(!Array.isArray(bookings))throw new Error('Risposta Dory non valida');var existing=doryExistingEvents_(),byMarker={};existing.forEach(function(e){var m=(e.description||'').match(/DORY-BOOKING-ID:([0-9a-f-]{36})/i);if(m)(byMarker[m[1]]=byMarker[m[1]]||[]).push(e)});DORY_WEEKS_.forEach(function(w){var current=existing.filter(function(e){return e.id===w.id})[0];if(!current)throw new Error('Evento settimanale non trovato: '+w.id);var wb=bookings.filter(function(b){return w.slots.indexOf(b.slot_id)>=0}),lines=wb.map(function(b){var origin=b.added_by==='ric'?' · aggiunto da Ric':b.added_by==='peppe'?' · aggiunto da Peppe':'',chosen=doryChosenDate_(b);return '• '+b.name+' — '+b.people+(Number(b.people)===1?' persona':' persone')+' · '+DORY_OFFERS_[b.slot_id][0]+(chosen?' · '+chosen.split('-').reverse().join('/'):'')+origin}),total=wb.reduce(function(s,b){return s+Number(b.people)},0),block=DORY_START_+'\nPrenotazioni confermate: '+lines.length+' · Persone: '+total+'\n'+(lines.length?lines.join('\n'):'Nessuna prenotazione confermata.')+'\n'+DORY_END_,next=doryDescription_(current.description||'',block).replace('https://dory-prenotazioni.riccardo-marin203123.chatgpt.site',DORY_SOURCE_);if(next!==(current.description||''))doryCalendarApi_('patch','/'+encodeURIComponent(w.id)+'?sendUpdates=none',{description:next})});var active={};bookings.forEach(function(b){if(!DORY_OFFERS_[b.slot_id]||!DORY_OFFERS_[b.slot_id][4])return;active[b.id]=true;var desired=doryBookingEvent_(b),matches=byMarker[b.id]||[],current=matches.shift();if(!current)doryCalendarApi_('post','?sendUpdates=all',desired);else{var ce=(current.attendees||[]).map(function(a){return a.email.toLowerCase()}).sort(),de=(desired.attendees||[]).map(function(a){return a.email.toLowerCase()}).sort();if(current.summary!==desired.summary||current.description!==desired.description||current.start.date!==desired.start.date||current.end.date!==desired.end.date||ce.join(',')!==de.join(','))doryCalendarApi_('patch','/'+encodeURIComponent(current.id)+'?sendUpdates=all',desired)}matches.forEach(function(d){doryCalendarApi_('delete','/'+encodeURIComponent(d.id)+'?sendUpdates=all')})});Object.keys(byMarker).forEach(function(id){if(!active[id])byMarker[id].forEach(function(e){doryCalendarApi_('delete','/'+encodeURIComponent(e.id)+'?sendUpdates=all')})})}finally{lock.releaseLock()}}
+function installDoryCalendarSync(){syncDoryCalendar();ScriptApp.getProjectTriggers().filter(function(t){return t.getHandlerFunction()==='syncDoryCalendar'}).forEach(ScriptApp.deleteTrigger);ScriptApp.newTrigger('syncDoryCalendar').timeBased().everyMinutes(15).create()}
