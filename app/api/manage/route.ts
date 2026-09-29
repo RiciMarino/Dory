@@ -1,6 +1,6 @@
 import { db, manager, managerName, overview } from "@/lib/data";
 import { offers } from "@/lib/plan";
-import { sendConfirmation } from "@/lib/confirmation";
+import { notifyManagersOfConfirmedBooking, sendConfirmation } from "@/lib/confirmation";
 import { sendCancellation } from "@/lib/cancellation";
 export async function POST(request:Request){
   if(!await manager(request)) return Response.json({error:"Accesso riservato"},{status:403});
@@ -14,8 +14,9 @@ export async function POST(request:Request){
       if(slot.kind!=="party"&&people>slot.available)return Response.json({error:"Non ci sono abbastanza posti liberi"},{status:409});
       const id=crypto.randomUUID();
       await db().prepare("INSERT INTO requests(id,slot_id,name,email,people,message,status,added_by,created_at) VALUES(?,?,?,?,?,?,?,?,?)").bind(id,slotId,name,email,people,message,"confirmed",addedBy,new Date().toISOString()).run();
-      const confirmation=body.sendConfirmation===true?await sendConfirmation(id):null;
-      return Response.json({ok:true,confirmation});
+      const managerNotification=await notifyManagersOfConfirmedBooking(id);
+      const confirmation=body.sendConfirmation===true&&email?await sendConfirmation(id):null;
+      return Response.json({ok:true,managerNotification,confirmation});
     }
     if(body.action==="capacity"){
       const slotId=String(body.slotId??"");const capacity=Number(body.capacity);const note=String(body.note??"").trim();
