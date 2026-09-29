@@ -19,24 +19,28 @@ function doPost(e) {
       var guestKey = 'cancelled-guest:' + data.id;
       var detail = String(data.name) + ' · ' + data.offer + ' · ' + Number(data.people) +
         (Number(data.people) === 1 ? ' persona' : ' persone');
+      var managerBody = 'Ric e Peppe,\n\nla prenotazione è stata cancellata dalla Gestione equipaggio.\n\n' +
+        detail + '\nEmail ospite: ' + (data.email || 'non indicata') +
+        '\n\nIl posto è di nuovo disponibile. L’invito individuale e il riepilogo Calendar saranno aggiornati dalla sincronizzazione periodica.';
       if (!properties.getProperty(managerKey)) {
         MailApp.sendEmail({
           to: 'ricimarino@gmail.com,giuseppeucci8@gmail.com',
           subject: 'Dory · Prenotazione cancellata: ' + data.name,
-          body: 'Ric e Peppe,\n\nla prenotazione è stata cancellata dalla Gestione equipaggio.\n\n' +
-            detail + '\nEmail ospite: ' + (data.email || 'non indicata') +
-            '\n\nIl posto è di nuovo disponibile. L’invito individuale e il riepilogo Calendar saranno aggiornati dalla sincronizzazione periodica.',
+          body: managerBody,
+          htmlBody: responsiveMail_(managerBody),
           name: 'Ric e Peppe'
         });
         properties.setProperty(managerKey, new Date().toISOString());
       }
       if (data.email && !properties.getProperty(guestKey)) {
+        var guestBody = 'Ciao ' + data.name + ',\n\nRic e Peppe hanno cancellato la tua prenotazione per ' +
+          data.offer + ' (' + Number(data.people) + (Number(data.people) === 1 ? ' persona' : ' persone') + ').\n\n' +
+          'Il relativo invito verrà rimosso dal calendario. Se vuoi chiarire o concordare un’altra uscita, rispondi pure a questa email. A bordo i Comandanti hanno sempre ragione; da terra puoi anche insultarci con tutta la fantasia che vuoi. Leggeremo tutto, promesso.\n\nRic e Peppe';
         MailApp.sendEmail({
           to: String(data.email).toLowerCase(),
           subject: 'Dory · La tua prenotazione è stata cancellata',
-          body: 'Ciao ' + data.name + ',\n\nRic e Peppe hanno cancellato la tua prenotazione per ' +
-            data.offer + ' (' + Number(data.people) + (Number(data.people) === 1 ? ' persona' : ' persone') + ').\n\n' +
-            'Il relativo invito verrà rimosso dal calendario. Se vuoi chiarire o concordare un’altra uscita, rispondi pure a questa email. A bordo i Comandanti hanno sempre ragione; da terra puoi anche insultarci con tutta la fantasia che vuoi. Leggeremo tutto, promesso.\n\nRic e Peppe',
+          body: guestBody,
+          htmlBody: responsiveMail_(guestBody),
           name: 'Ric e Peppe'
         });
         properties.setProperty(guestKey, new Date().toISOString());
@@ -91,4 +95,16 @@ function doPost(e) {
 
 function reply_(data) {
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function responsiveMail_(body) {
+  var paragraphs = String(body).split(/\n\n+/).map(function(part) {
+    var escaped = part.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return '<p style="margin:0 0 18px;line-height:1.55;overflow-wrap:anywhere;word-break:break-word">' +
+      escaped.replace(/\n/g, '<br>') + '</p>';
+  }).join('');
+  return '<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;color:#17343b;' +
+    'width:100%;max-width:560px;margin:0 auto;padding:16px;box-sizing:border-box">' +
+    paragraphs + '</div>';
 }
