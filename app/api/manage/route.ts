@@ -15,8 +15,8 @@ export async function POST(request:Request){
       const id=crypto.randomUUID();
       await db().prepare("INSERT INTO requests(id,slot_id,name,email,people,message,status,added_by,created_at) VALUES(?,?,?,?,?,?,?,?,?)").bind(id,slotId,name,email,people,message,"confirmed",addedBy,new Date().toISOString()).run();
       const managerNotification=await notifyManagersOfConfirmedBooking(id);
-      const confirmation=body.sendConfirmation===true&&email?await sendConfirmation(id):null;
-      return Response.json({ok:true,managerNotification,confirmation});
+      const confirmation=email?await sendConfirmation(id):null;
+      return Response.json({ok:true,managerNotification,confirmation,emailWarning:!managerNotification.sent||Boolean(email&&!confirmation?.sent)});
     }
     if(body.action==="capacity"){
       const slotId=String(body.slotId??"");const capacity=Number(body.capacity);const note=String(body.note??"").trim();
