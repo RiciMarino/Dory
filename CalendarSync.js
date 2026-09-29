@@ -4,6 +4,7 @@ var DORY_CALENDAR_ = 'primary';
 var DORY_MARKER_ = 'DORY-BOOKING-ID:';
 var DORY_START_ = '— Equipaggio Dory —';
 var DORY_END_ = '— Fine equipaggio Dory —';
+var DORY_PEPPE_EMAIL_ = 'giuseppeucci8@gmail.com';
 var DORY_WEEKS_ = [
   {id:'6rgre9e2sut1gf56bt1icrgknk', slots:['nov-day','nov-weekend']},
   {id:'ntc5br507d5f6qdhmqj5i6rt78', slots:['feb-day','feb-night']},
@@ -58,7 +59,8 @@ function doryBookingEvent_(booking) {
       'Il trick: le giornate didattiche. Servono la tessera sportiva AICS (10 €) e il certificato medico non agonistico.\n' + DORY_SOURCE_,
     start:{date:offer[2]}, end:{date:offer[3]}, guestsCanModify:false, visibility:'private'
   };
-  if (booking.email) event.attendees = [{email:String(booking.email).toLowerCase()}];
+  event.attendees = [{email:DORY_PEPPE_EMAIL_}];
+  if (booking.email && String(booking.email).toLowerCase() !== DORY_PEPPE_EMAIL_) event.attendees.unshift({email:String(booking.email).toLowerCase()});
   return event;
 }
 function syncDoryCalendar() {
@@ -86,12 +88,12 @@ function syncDoryCalendar() {
       if (!DORY_OFFERS_[b.slot_id] || !DORY_OFFERS_[b.slot_id][4]) return;
       active[b.id] = true;
       var desired = doryBookingEvent_(b), matches = byMarker[b.id] || [], current = matches.shift();
-      if (!current) doryCalendarApi_('post', b.email ? '?sendUpdates=all' : '?sendUpdates=none', desired);
+      if (!current) doryCalendarApi_('post', '?sendUpdates=all', desired);
       else {
-        var currentEmail = (current.attendees || []).map(function(a) { return a.email.toLowerCase(); });
-        var desiredEmail = b.email ? [String(b.email).toLowerCase()] : [];
+        var currentEmail = (current.attendees || []).map(function(a) { return a.email.toLowerCase(); }).sort();
+        var desiredEmail = (desired.attendees || []).map(function(a) { return a.email.toLowerCase(); }).sort();
         if (current.summary !== desired.summary || current.description !== desired.description || current.start.date !== desired.start.date || current.end.date !== desired.end.date || currentEmail.join(',') !== desiredEmail.join(','))
-          doryCalendarApi_('patch', '/' + encodeURIComponent(current.id) + (b.email ? '?sendUpdates=all' : '?sendUpdates=none'), desired);
+          doryCalendarApi_('patch', '/' + encodeURIComponent(current.id) + '?sendUpdates=all', desired);
       }
       matches.forEach(function(duplicate) { doryCalendarApi_('delete', '/' + encodeURIComponent(duplicate.id) + '?sendUpdates=all'); });
     });
