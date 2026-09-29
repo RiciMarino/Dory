@@ -1,7 +1,10 @@
 name: Dory Cloudflare preview
 
-# Deliberately manual until the new D1, secrets and Calendar sync are verified.
+# Preview branch publishes independently of the current Sites site.
 on:
+  push:
+    branches:
+      - feature/giornate-febbraio-settembre
   workflow_dispatch:
     inputs:
       initialize_database:
