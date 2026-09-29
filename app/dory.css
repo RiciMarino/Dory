@@ -9,3 +9,7 @@ body{background:#f0f5f2;color:#13343c;font-family:Arial,Helvetica,sans-serif;mar
 .adminrow .report-group{margin:14px 0 0}
 .adminrow .report-head{border-top:0;margin-top:0;padding-top:0}
 .adminrow .report-head h3{margin:0}
+.confirmation-notice{background:#f9c96d;color:#39260d;border:2px solid #d98525;font-weight:800;box-shadow:0 3px 12px #a8652333}
+.confirmation-sent{display:inline-block;background:#f9dc93;color:#583711;border-radius:8px;padding:6px 10px;font-weight:700}
+.pending-count{display:inline-block;margin-left:10px;background:#ffcc79;color:#633500;border-radius:100px;padding:7px 12px;font-size:14px;font-weight:800}
+.modal label small{font-size:12px;font-weight:400;color:#567075}
