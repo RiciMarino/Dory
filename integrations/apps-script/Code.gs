@@ -35,7 +35,7 @@ function doPost(e) {
       if (data.email && !properties.getProperty(guestKey)) {
         var guestBody = 'Ciao ' + data.name + ',\n\nRic e Peppe hanno cancellato la tua prenotazione per ' +
           data.offer + ' (' + Number(data.people) + (Number(data.people) === 1 ? ' persona' : ' persone') + ').\n\n' +
-          'Il relativo invito verrà rimosso dal calendario. Se vuoi chiarire o concordare un’altra uscita, rispondi pure a questa email. A bordo i Comandanti hanno sempre ragione; da terra puoi anche insultarci con tutta la fantasia che vuoi. Leggeremo tutto, promesso.\n\nRic e Peppe';
+          'Il relativo invito verrà rimosso dal calendario. Se ti va di protestare, fuori bordo puoi perfino insultare i Comandanti: a bordo la loro parola è legge, ma qui puoi sbizzarrirti rispondendo a questa email.\n\nRic e Peppe';
         MailApp.sendEmail({
           to: String(data.email).toLowerCase(),
           subject: 'Dory · La tua prenotazione è stata cancellata',
